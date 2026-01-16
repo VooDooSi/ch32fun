@@ -105,7 +105,7 @@ static void wch_link_multicommands( libusb_device_handle * devh, int nrcommands,
 	va_end( argp );
 }
 
-static inline libusb_device_handle * wch_link_base_setup( int inhibit_startup )
+static inline libusb_device_handle * wch_link_base_setup( int inhibit_startup, const char * selected_serial  )
 {
 	libusb_context * ctx = 0;
 	int status;
@@ -127,7 +127,61 @@ static inline libusb_device_handle * wch_link_base_setup( int inhibit_startup )
 		libusb_device *device = list[i];
 		struct libusb_device_descriptor desc;
 		int r = libusb_get_device_descriptor(device,&desc);
-		if( r == 0 && desc.idVendor == 0x1a86 && desc.idProduct == 0x8010 ) { found = device; }
+		if( r == 0 && desc.idVendor == 0x1a86 && desc.idProduct == 0x8010 ) { 
+			
+			if ( desc.iSerialNumber )
+			{
+				libusb_device_handle *handle;
+				r = libusb_open( device, &handle );
+				if ( r == 0 )
+				{
+					unsigned char serial_number[15];
+					int sr = libusb_get_string_descriptor_ascii(
+						handle, desc.iSerialNumber, serial_number, sizeof( serial_number ) );
+					//	printf("Serial number: %s\n", serial_number);
+					if ( sr > 0 )
+					{
+						if (selected_serial != NULL && strcmp((const char *)serial_number, selected_serial) == 0) {
+							found = device;
+							break;
+						}
+					}
+					libusb_close( handle );
+				}
+			}
+
+			
+			if(selected_serial != NULL) { 
+					if ( desc.iSerialNumber )
+					{
+						libusb_device_handle *handle;
+						r = libusb_open( device, &handle );
+						if ( r == 0 )
+						{
+							unsigned char serial_number[15];
+							int sr = libusb_get_string_descriptor_ascii(
+								handle, desc.iSerialNumber, serial_number, sizeof( serial_number ) );
+							if ( sr > 0 )
+							{
+								if (selected_serial != NULL && strcmp((const char *)serial_number, selected_serial) == 0) {
+									found = device;
+									break;
+								}
+							}
+							libusb_close( handle );
+						}
+					}
+					else
+					{
+						found = device;
+					}
+				}
+				else {
+					found = device;
+				}
+			
+			}		
+		
 		if( r == 0 && desc.idVendor == 0x1a86 && desc.idProduct == 0x8012) { found_arm_programmer = device; }
 		if( r == 0 && desc.idVendor == 0x4348 && desc.idProduct == 0x55e0) { found_programmer_in_iap = device; }
 	}
@@ -636,10 +690,11 @@ int LEExit( void * d )
 	return 0;
 }
 
-void * TryInit_WCHLinkE()
+void * TryInit_WCHLinkE(const init_hints_t* init_hints)
 {
 	libusb_device_handle * wch_linke_devh;
-	wch_linke_devh = wch_link_base_setup(0);
+	const char * selected_serial = init_hints->serial_number;
+	wch_linke_devh = wch_link_base_setup(0,selected_serial);
 	if( !wch_linke_devh ) return 0;
 
 	struct LinkEProgrammerStruct * ret = malloc( sizeof( struct LinkEProgrammerStruct ) );
@@ -663,6 +718,50 @@ void * TryInit_WCHLinkE()
 	return ret;
 };
 
+void list_connected_WCHLinkE()
+{
+	libusb_context * ctx = 0;
+	int status;
+	status = libusb_init(&ctx);
+	if (status < 0) {
+		fprintf( stderr, "Error: libusb_init_context() returned %d\n", status );
+		exit( status );
+	}
+	
+	libusb_device **list;
+	ssize_t cnt = libusb_get_device_list(ctx, &list);
+	ssize_t i = 0;	
+
+	for (i = 0; i < cnt; i++) {
+		libusb_device *device = list[i];
+		struct libusb_device_descriptor desc;
+		int r = libusb_get_device_descriptor(device,&desc);
+		if( r == 0 && desc.idVendor == 0x1a86 && desc.idProduct == 0x8010 ) { 			
+				if ( desc.iSerialNumber )
+				{
+					libusb_device_handle *handle;
+					r = libusb_open( device, &handle );
+					if ( r == 0 )
+					{
+						unsigned char serial_number[15];
+						int sr = libusb_get_string_descriptor_ascii(
+							handle, desc.iSerialNumber, serial_number, sizeof( serial_number ) );
+							
+						if ( sr > 0 )
+						{
+							printf("Serial number: %s\n", serial_number);
+						}
+						libusb_close( handle );
+					}
+				}	
+	
+			
+			}
+		}
+
+    libusb_free_device_list(list, 1);
+    libusb_exit(ctx);
+}
 
 #if 1
 
