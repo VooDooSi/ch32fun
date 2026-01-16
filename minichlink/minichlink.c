@@ -286,6 +286,7 @@ keep_going:
 					fprintf( stderr, "-Q argument required 2 arguments\n" );
 					goto unimplemented;
 				}
+				break;
 			case 'C': // For specifying programmer
 			case 'c':
 				// COM port or programmer argument already parsed previously
