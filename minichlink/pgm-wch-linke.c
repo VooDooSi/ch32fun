@@ -753,9 +753,7 @@ void list_connected_WCHLinkE()
 						}
 						libusb_close( handle );
 					}
-				}	
-	
-			
+				}		
 			}
 		}
 

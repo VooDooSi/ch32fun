@@ -198,6 +198,7 @@ int main( int argc, char ** argv )
 		(argc > 1 && argv[1][0] == '-' && argv[1][1] == 'h' ) |
 		(argc > 1 && argv[1][0] == '-' && argv[1][1] == 't' ) |
 		(argc > 1 && argv[1][0] == '-' && argv[1][1] == 'f' ) |
+		(argc > 1 && argv[1][0] == '-' && argv[1][1] == 'l' ) |
 		(argc > 1 && argv[1][0] == '-' && argv[1][1] == 'X' );
 
 	if( !skip_startup && MCF.SetupInterface )
