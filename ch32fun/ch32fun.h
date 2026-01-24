@@ -24,7 +24,11 @@
 	4. Delays
 		Delay_Us(n)
 		Delay_Ms(n)
-		DelaySysTick( uint32_t n );
+		DelaySysTick( uint32_t n )
+		TimeElapsed32( uint32_t now, uint32_t start);
+		TimeElapsed32U( now, start ); // For if events could be in the future.
+		funSysTick32()
+		funSysTick64()
 
 	5. printf
 		printf, _write may be semihosted, or printed to UART.
@@ -889,7 +893,8 @@ extern "C" {
 #define Ticks_from_Us(n)	((n) * DELAY_US_TIME)
 #define Ticks_from_Ms(n)	((n) * DELAY_MS_TIME)
 
-#define TimeElapsed32(now,start)  ((uint32_t)((uint32_t)(now)-(uint32_t)(start)))
+#define TimeElapsed32(now,start)  ((int32_t)((uint32_t)(now)-(uint32_t)(start)))
+#define TimeElapsed32u(now,start)  ((uint32_t)((uint32_t)(now)-(uint32_t)(start)))
 
 // Add a certain number of nops.  Note: These are usually executed in pairs
 // and take two cycles, so you typically would use 0, 2, 4, etc.
@@ -1010,7 +1015,6 @@ RV_STATIC_INLINE void funPinAF(u32 pin, u32 af)
 
 #if defined(__riscv) || defined(__riscv__) || defined( CH32V003FUN_BASE )
 
-
 // Stuff that can only be compiled on device (not for the programmer, or other host programs)
 
 // Initialize the ADC calibrate it and set some sane defaults.
@@ -1029,6 +1033,17 @@ void DefaultIRQHandler( void ) __attribute__((section(VECTOR_HANDLER_SECTION))) 
 
 void DelaySysTick( uint32_t n );
 
+// #define funSysTick32() is defined per-architecture.
+
+// Get a 64-bit timestamp.  Please in general try to use 32-bit timestamps
+// whenever possible.  Use functions that automatically handle rollover
+// correctly like TimeElapsed32( start, end ).  Only use this in cases where
+// you must act on time periods exceeding 2^31 ticks.
+//
+// Also, if you are on a platform without a hardware 64-bit timer, you must
+// call this function at least once every 2^32 ticks to make sure MSBs aren't
+// lost.
+uint64_t funSysTick64( void );
 
 // Depending on a LOT of factors, it's about 6 cycles per n.
 // **DO NOT send it zero or less.**
